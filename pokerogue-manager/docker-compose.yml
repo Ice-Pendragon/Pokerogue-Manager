@@ -1,0 +1,98 @@
+services:
+  server:
+    build:
+      context: ${DATA_PATH}/api
+    image: ${PROJECT_NAME}-server:latest
+    container_name: ${PROJECT_NAME}-server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      debug: "true"
+      dbaddr: db
+      dbuser: pokerogue
+      dbpass: ${DB_PASS}
+      dbname: pokeroguedb
+      gameurl: "/"
+      callbackurl: "/account/login"
+    networks:
+      - internal
+
+  db:
+    image: mariadb:11
+    container_name: ${PROJECT_NAME}-db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 1m
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-admin}
+      MYSQL_DATABASE: pokeroguedb
+      MYSQL_USER: pokerogue
+      MYSQL_PASSWORD: ${DB_PASS}
+    volumes:
+      - ${DATA_PATH}/mysql:/var/lib/mysql
+    networks:
+      - internal
+
+  client:
+    build:
+      context: ${DATA_PATH}/source
+      dockerfile: /pokerogue-manager/Dockerfile
+      args:
+        MODE: ${MODE}
+        NODE_MEM_LIMIT: ${NODE_MEM_LIMIT}
+    image: ${PROJECT_NAME}-client:latest
+    container_name: ${PROJECT_NAME}-client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${GAME_PORT}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - internal
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: ${PROJECT_NAME}-watchtower
+    restart: always
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - DOCKER_API_VERSION=${DOCKER_API_VERSION}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ${PROJECT_NAME}-db
+    networks:
+      - internal
+
+  updater:
+    build:
+      context: .
+      dockerfile: ./webhook/Dockerfile
+    container_name: ${PROJECT_NAME}-updater
+    restart: unless-stopped
+    environment:
+      - FOLDER_NAME=${FOLDER_NAME}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    ports:
+      - "${WEBHOOK_PORT}:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/pokerogue-manager:ro
+      - ../config/${FOLDER_NAME}:/config/${FOLDER_NAME}:ro
+      - ../data/${FOLDER_NAME}:/data/${FOLDER_NAME}
+    command:
+      - "-hooks=/pokerogue-manager/webhook/hooks.json"
+      - "-template"
+      - "-hotreload"
+      - "-verbose"
+    networks:
+      - internal
+
+networks:
+  internal:
+    name: ${PROJECT_NAME}-network
