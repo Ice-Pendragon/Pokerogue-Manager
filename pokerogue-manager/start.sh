@@ -80,9 +80,9 @@ echo ">>> Optimizing build environment for ${PROJECT_NAME}..."
 # .env.local 또는 .env.MODE.local 복사
 MODE=$(grep '^MODE=' "$CONFIG_FILE" | cut -d'=' -f2- | tr -d "'\"\r")
 if [ "$MODE" = "development" ] || [ "$MODE" = "app" ]; then
-    ENV_SOURCE_FILE="./environment/.env.guest.local"
+    ENV_SOURCE_FILE="/pokerogue-manager/environment/.env.guest.local"
 else
-    ENV_SOURCE_FILE="./environment/.env.local"
+    ENV_SOURCE_FILE="/pokerogue-manager/environment/.env.local"
 fi
 if [ -f "${SOURCE_DIR}/.env.${MODE}" ]; then
     ENV_TARGET_FILE="${SOURCE_DIR}/.env.${MODE}.local"
@@ -117,18 +117,18 @@ if [ "$2" == "update" ]; then
               DATA_PATH="$DATA_PATH" \
               NODE_MEM_LIMIT="$NODE_MEM_LIMIT" \
               DOCKER_API_VERSION="$DOCKER_API_VERSION" \
-          docker compose --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" up -d --build server client
+          docker compose -f "$COMPOSE_FILE" --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" up -d --build server client
 else
     # 기존 컨테이너 정리
     echo ">>> Terminating existing containers for ${PROJECT_NAME}..."
     $SUDO env PROJECT_NAME="$PROJECT_NAME" \
               DATA_PATH="$DATA_PATH" \
-          docker compose --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" down --remove-orphans > /dev/null 2>&1
+          docker compose -f "$COMPOSE_FILE" --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" down --remove-orphans > /dev/null 2>&1
     # 빌드 (또는 리빌드)
     echo ">>> Starting Services for ${PROJECT_NAME} using data from ${FOLDER_NAME}..."
     $SUDO env PROJECT_NAME="$PROJECT_NAME" \
               DATA_PATH="$DATA_PATH" \
               NODE_MEM_LIMIT="$NODE_MEM_LIMIT" \
               DOCKER_API_VERSION="$DOCKER_API_VERSION" \
-          docker compose --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" up -d --build
+          docker compose -f "$COMPOSE_FILE" --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" up -d --build
 fi

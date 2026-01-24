@@ -8,6 +8,7 @@ if [ -z "$FOLDER_NAME" ]; then
 fi
 
 # 2. 경로 및 설정 로드
+COMPOSE_FILE="/pokerogue-manager/docker-compose.yml"
 CONFIG_FILE="/config/${FOLDER_NAME}/config.env"
 DATA_PATH="/data/${FOLDER_NAME}"
 
@@ -36,7 +37,7 @@ fi
 
 # 3. Docker 리소스 정리 (컨테이너 + 가상 네트워크 + 익명 볼륨)
 echo "🛑 컨테이너 정지 및 도커 리소스 해제 중..."
-$SUDO docker compose -p "$PROJECT_NAME" down --remove-orphans -v
+$SUDO docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" down --remove-orphans -v
 
 # 4. 호스트 데이터 폴더 삭제
 if [ -d "$DATA_PATH" ]; then

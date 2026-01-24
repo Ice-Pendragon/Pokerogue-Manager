@@ -52,7 +52,7 @@ services:
     ports:
       - "${GAME_PORT}:80"
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - /pokerogue-manager/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - internal
 
@@ -82,9 +82,9 @@ services:
       - "${WEBHOOK_PORT}:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./:/pokerogue-manager:ro
-      - ../config/${FOLDER_NAME}:/config/${FOLDER_NAME}:ro
-      - ../data/${FOLDER_NAME}:/data/${FOLDER_NAME}
+      - /pokerogue-manager/:/pokerogue-manager:ro
+      - /config/${FOLDER_NAME}:/config/${FOLDER_NAME}:ro
+      - /data/${FOLDER_NAME}:/data/${FOLDER_NAME}
     command:
       - "-hooks=/pokerogue-manager/webhook/hooks.json"
       - "-template"
