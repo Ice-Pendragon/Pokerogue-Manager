@@ -43,7 +43,10 @@ if [ ! -d "$API_PATH" ]; then
 else
     echo ">>> Updating RogueServer..."
     cd "$API_PATH"
-    $SUDO git pull
+    $SUDO git pull origin master || {
+        echo ">>> Standard update failed. Attempting force sync..."; 
+        $SUDO git fetch --all && $SUDO git reset --hard origin/master && $SUDO git clean -fd;
+    }
     $SUDO git submodule update --init --depth 1 --recursive
     cd - > /dev/null
 fi
@@ -59,7 +62,10 @@ if [ ! -d "$SOURCE_DIR" ]; then
 else
     echo ">>> Updating Frontend Source..."
     cd "$SOURCE_DIR"
-    $SUDO git pull origin "$SOURCE_BRANCH"
+    $SUDO git pull origin "$SOURCE_BRANCH" || {
+        echo ">>> Standard update failed. Attempting force sync..."; 
+        $SUDO git fetch --all && $SUDO git reset --hard origin/"$SOURCE_BRANCH" && $SUDO git clean -fd;
+    }
     $SUDO git submodule update --init --depth 1 --recursive
     cd - > /dev/null
 fi
