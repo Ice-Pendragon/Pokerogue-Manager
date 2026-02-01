@@ -21,8 +21,9 @@
 │   │   └── hooks.json
 │   ├── Dockerfile
 │   ├── docker-compose.yml
-│   └── start.sh
-│   └── stop.sh
+│   ├── start.sh
+│   ├── stop.sh
+│   └── shutdown.sh
 └── config/
     └── server1/              # [폴더명] 서버 식별자
         └── config.env        # [각 서버 설정]
@@ -51,7 +52,7 @@ sudo mkdir -p /data
 ## 3. 파일 권한 설정 (최초 1회)
 ```Bash
 # 실행 스크립트에 권한 부여
-sudo chmod +x /pokerogue-manager/start.sh /pokerogue-manager/stop.sh
+sudo chmod +x /pokerogue-manager/*.sh
 ```
 ## 4. 스왑(Swap) 메모리 설정 (최초 1회)
 ```Bash
