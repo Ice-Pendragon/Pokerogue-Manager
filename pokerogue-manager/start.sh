@@ -58,7 +58,11 @@ SOURCE_BRANCH=$(grep '^GIT_BRANCH=' "$CONFIG_FILE" | cut -d'=' -f2- | tr -d "'\"
 if [ ! -d "$SOURCE_DIR" ]; then
     echo ">>> Updating Frontend Source..."
     $SUDO mkdir -p "$SOURCE_DIR"
-    $SUDO git clone --depth 1 --shallow-submodules --recursive -b "$SOURCE_BRANCH" "$SOURCE_REPO" "$SOURCE_DIR"
+    if ! $SUDO git clone --depth 1 -b "$SOURCE_BRANCH" "$SOURCE_REPO" "$SOURCE_DIR"; then
+        echo "!!! CRITICAL ERROR: Failed to clone frontend source."
+        $SUDO rm -rf -- "$SOURCE_DIR"
+        exit 1
+    fi
 else
     echo ">>> Updating Frontend Source..."
     cd "$SOURCE_DIR"
@@ -66,7 +70,44 @@ else
         echo ">>> Standard update failed. Attempting force sync..."; 
         $SUDO git fetch --all && $SUDO git reset --hard origin/"$SOURCE_BRANCH" && $SUDO git clean -fd;
     }
-    $SUDO git submodule update --init --depth 1 --recursive
+    cd - > /dev/null
+fi
+if [ -f "${SOURCE_DIR}/.gitmodules" ]; then
+    cd "$SOURCE_DIR"
+    if ! $SUDO git submodule sync --recursive; then
+        echo "!!! CRITICAL ERROR: Failed to synchronize frontend submodule URLs."
+        cd - > /dev/null
+        exit 1
+    fi
+    SUBMODULE_LIST=$(
+        $SUDO git config -f .gitmodules --get-regexp '^submodule\..*\.path$'
+    )
+    while read -r SUBMODULE_KEY SUBMODULE_PATH; do
+        SUBMODULE_NAME="${SUBMODULE_KEY#submodule.}"
+        SUBMODULE_NAME="${SUBMODULE_NAME%.path}"
+        if ! MODULE_GIT_DIR=$($SUDO git rev-parse --git-path "modules/${SUBMODULE_NAME}"); then
+            echo "!!! CRITICAL ERROR: Failed to resolve Git directory for submodule: ${SUBMODULE_PATH}"
+            cd - > /dev/null
+            exit 1
+        fi
+        echo ">>> Updating submodule: ${SUBMODULE_PATH}"
+        if $SUDO git submodule update --init --depth 1 --recursive -- "$SUBMODULE_PATH"; then
+            continue
+        fi
+        echo ">>> Submodule update failed: ${SUBMODULE_PATH}"
+        echo ">>> Removing and reinitializing..."
+        $SUDO git submodule deinit -f -- "$SUBMODULE_PATH" || true
+        $SUDO rm -rf -- "$SUBMODULE_PATH"
+        $SUDO rm -rf -- "$MODULE_GIT_DIR"
+        if ! $SUDO git submodule update --init --depth 1 --recursive -- "$SUBMODULE_PATH"; then
+            echo "!!! CRITICAL ERROR: Failed to reinitialize submodule: ${SUBMODULE_PATH}"
+            cd - > /dev/null
+            exit 1
+        fi
+        echo ">>> Successfully reinitialized submodule: ${SUBMODULE_PATH}"
+    done < <(
+        $SUDO git config -f .gitmodules --get-regexp '^submodule\..*\.path$'
+    )
     cd - > /dev/null
 fi
 
@@ -109,9 +150,6 @@ fi
 # 6. [Start] 빌드 및 실행
 if [ "$2" == "update" ]; then
     echo ">>> Updating Services for ${PROJECT_NAME} using data from ${FOLDER_NAME}..."
-    # 소스 업데이트
-    cd "$API_PATH" && $SUDO git pull && cd - > /dev/null
-    cd "$SOURCE_DIR" && $SUDO git pull && cd - > /dev/null
     # 컨테이너 리빌드
     $SUDO env PROJECT_NAME="$PROJECT_NAME" \
               DATA_PATH="$DATA_PATH" \
