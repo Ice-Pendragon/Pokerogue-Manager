@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:22-slim AS builder
+FROM node:24.9.0-slim AS builder
 WORKDIR /app
 
 # 환경 변수 설정
@@ -25,9 +25,12 @@ RUN --mount=type=cache,target=/var/cache/apt \
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # 의존성 설치
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches/ ./patches/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile --ignore-scripts
+    git init -q && \
+    pnpm install --frozen-lockfile && \
+    rm -rf .git
 
 # 소스 복사
 COPY --chown=node:node . .
