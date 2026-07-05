@@ -37,7 +37,13 @@ fi
 
 # 3. Docker 리소스 정리 (컨테이너 + 가상 네트워크 + 익명 볼륨)
 echo "🛑 컨테이너 정지 및 도커 리소스 해제 중..."
-$SUDO docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" down --remove-orphans -v
+$SUDO env PROJECT_NAME="$PROJECT_NAME" \
+          DATA_PATH="$DATA_PATH" \
+          FOLDER_NAME="$FOLDER_NAME" \
+    docker compose -f "$COMPOSE_FILE" \
+    --env-file "$CONFIG_FILE" \
+    -p "$PROJECT_NAME" down --remove-orphans -v \
+    || echo "⚠️ 컨테이너 정리에 실패했습니다. (컨테이너가 이미 삭제되었을 가능성이 있습니다.)"
 
 # 4. 호스트 데이터 폴더 삭제
 if [ -d "$DATA_PATH" ]; then

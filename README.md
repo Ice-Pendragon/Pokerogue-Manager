@@ -156,16 +156,10 @@ GitHub 레포지토리에 새로운 코드를 `push`했을 때, 서버가 이를
 **Google Cloud Platform (GCP) 사용자:**
 인스턴스 수정 -> 메타데이터 -> **`startup-script`** 키에 아래 내용을 입력하세요.
 ```bash
-# 패키지 및 시스템 유지보수
-sudo apt update -y
-sudo apt full-upgrade -y
-sudo apt autoremove -y
-sudo apt clean -y
-sudo systemctl daemon-reload
 # Docker 서비스 재개
 sudo systemctl enable --now docker
 # 모든 프로젝트 서비스 재개
-for dir in /data/*/; do if [ -d "$dir" ]; then FOLDER_NAME=$(basename "$dir"); CONFIG_FILE="/config/$FOLDER_NAME/config.env"; if [ -f "$CONFIG_FILE" ]; then PROJECT_NAME=$(grep "^PROJECT_NAME=" "$CONFIG_FILE" | cut -d'=' -f2- | tr -d "'\"\r"); if [ -n "$PROJECT_NAME" ]; then sudo env PROJECT_NAME="$PROJECT_NAME" DATA_PATH="/data/$FOLDER_NAME" DOCKER_API_VERSION="$(docker version --format '{{.Server.APIVersion}}')" docker compose --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" up -d; fi; fi; fi; done
+for dir in /data/*/; do if [ -d "$dir" ]; then FOLDER_NAME=$(basename "$dir"); CONFIG_FILE="/config/$FOLDER_NAME/config.env"; if [ -f "$CONFIG_FILE" ]; then PROJECT_NAME=$(grep "^PROJECT_NAME=" "$CONFIG_FILE" | cut -d'=' -f2- | tr -d "'\"\r"); if [ -n "$PROJECT_NAME" ]; then sudo env PROJECT_NAME="$PROJECT_NAME" FOLDER_NAME="$FOLDER_NAME" DATA_PATH="/data/$FOLDER_NAME" DOCKER_API_VERSION="$(docker version --format '{{.Server.APIVersion}}')" docker compose -f /pokerogue-manager/docker-compose.yml --env-file "$CONFIG_FILE" -p "$PROJECT_NAME" up -d; fi; fi; fi; done
 # Docker 서비스 유지보수
 sudo docker system prune -f
 sudo docker image prune -af
@@ -179,4 +173,9 @@ sudo /pokerogue-manager/start.sh [폴더명] update
 특정 프로젝트의 컨테이너를 정지하고 데이터를 삭제하려면 다음 명령어를 사용합니다. (설정 파일은 유지됨)
 ```bash
 sudo /pokerogue-manager/stop.sh [폴더명]
+```
+## 6. 서버 컴퓨터 업데이트
+서버 컴퓨터의 프로그램들을 업데이트하려면 다음 명령어를 사용합니다.
+```bash
+sudo /pokerogue-manager/update.sh
 ```

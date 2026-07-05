@@ -131,7 +131,7 @@ else
     ENV_TARGET_FILE="${SOURCE_DIR}/.env.local"
 fi
 if ! cmp -s "$ENV_SOURCE_FILE" "$ENV_TARGET_FILE"; then
-    cp "$ENV_SOURCE_FILE" "$ENV_TARGET_FILE"
+    $sudo cp "$ENV_SOURCE_FILE" "$ENV_TARGET_FILE"
 fi
 
 # .dockerignore 재생성
@@ -144,7 +144,7 @@ DOCKERIGNORE_CONTENT="# .dockerignore
 .env
 Dockerfile"
 if [ ! -f "${SOURCE_DIR}/.dockerignore" ] || [ "$DOCKERIGNORE_CONTENT" != "$(cat "${SOURCE_DIR}/.dockerignore" 2>/dev/null)" ]; then
-    echo "$DOCKERIGNORE_CONTENT" > "${SOURCE_DIR}/.dockerignore"
+    echo "$DOCKERIGNORE_CONTENT" | $SUDO tee "${SOURCE_DIR}/.dockerignore" > /dev/null
 fi
 
 # 6. [Start] 빌드 및 실행
